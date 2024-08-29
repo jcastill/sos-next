@@ -29,6 +29,7 @@ class Instructlab(Plugin, IndependentPlugin):
             'taxonomy diff --taxonomy-base=empty',
             'system info',
             'model list',
+            'config show'
         ]
 
         for con in self.containers:
