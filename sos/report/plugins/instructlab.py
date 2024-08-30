@@ -8,7 +8,7 @@
 #
 # See the LICENSE file in the source distribution for further information.
 
-from sos.report.plugins import Plugin, IndependentPlugin
+from sos.report.plugins import (Plugin, IndependentPlugin, PluginOpt)
 
 
 class Instructlab(Plugin, IndependentPlugin):
@@ -18,11 +18,31 @@ class Instructlab(Plugin, IndependentPlugin):
     profiles = ('ai',)
     containers = ('instructlab', 'ilab',)
 
-    def setup(self):
-        config_dir = '/usr/share/instructlab/config/'
-        opt_dir = '/opt/app-root/src/.config/instructlab/'
+    option_list = [
+        PluginOpt('ilab_user', default='root', val_type=str,
+                  desc='user that runs instructlab'),
+        PluginOpt('ilab_conf_dir', default='', val_type=str,
+                  desc='instructlab data directory'),
+    ]
 
-        instructlab_con = None
+    def setup(self):
+        cont_share_conf_path = '/usr/share/instructlab/config/'
+        cont_opt_path = '/opt/app-root/src/.config/instructlab'
+        # .cache dir contains the models and oci directories
+        # which can be quite big. We'll gather this only if
+        # specifying it via command line option
+        cont_cache_path = f'{cont_opt_path}/.cache/instructlab'
+        # .config is where the configuration yaml files can
+        # be found. We gather this always.
+        cont_config_path = f'{cont_opt_path}/.config/instructlab'
+        # In the .local directory we can find datasets,
+        # chat logs, taxonomies, and other very useful data
+        # We gather this always.
+        cont_local_path = f'{cont_opt_path}/.local/share/instructlab/'
+
+        in_container = False
+        container_names = []
+        _containers = self.get_containers()
 
         subcmds = [
             'taxonomy diff',
@@ -32,17 +52,50 @@ class Instructlab(Plugin, IndependentPlugin):
             'config show'
         ]
 
-        for con in self.containers:
-            if self.get_container_by_name(con):
-                instructlab_con = con
-                self.add_copy_spec([f'{config_dir}rhel_ai_config.yaml',
-                                    f'{opt_dir}config.yaml'],
-                                   container=instructlab_con)
+        data_dirs = [
+            'data',
+            'generated',
+            'models',
+            'taxonomy',
+            'taxonomy_data',
+            'chatlogs',
+            'checkpoints',
+            'datasets',
+            'internal',
+            'phased',
+            'taxonomy',
+        ]
+
+        for _con in _containers:
+            if _con[1].startswith('instructlab'):
+                in_container = True
+                container_names.append(_con[1])
+
+        if in_container:
+            for cont in container_names:
+                self.add_copy_spec(
+                    [f'{cont_share_conf_path}rhel_ai_config.yaml',
+                     f'{cont_opt_path}config.yaml'],
+                    container=cont)
+                self.add_copy_spec(
+                    [f"{cont_opt_path}/{data_dir}" for data_dir in data_dirs],
+                    container=cont
+                    )
                 self.add_cmd_output(
                     [f"ilab {sub}" for sub in subcmds],
-                    container=instructlab_con
+                    container=cont
                 )
-                self.add_container_logs(instructlab_con)
-
+                self.add_container_logs(cont)
+        else:
+            if self.get_option("ilab_user"):
+                ilab_dir = f'/home/{self.get_option("ilab_user")}/'
+                if self.get_option("ilab_conf_dir"):
+                    ilab_dir = f'{ilab_dir}{self.get_option("ilab_conf_dir")}'
+                else:
+                    ilab_dir = f'{ilab_dir}instructlab'
+            self.add_copy_spec(f'{ilab_dir}/config.yaml')
+            self.add_copy_spec([
+                f"{ilab_dir}/{data_dir}" for data_dir in data_dirs
+            ])
 
 # vim: set et ts=4 sw=4 :
