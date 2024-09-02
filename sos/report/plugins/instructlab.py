@@ -23,11 +23,13 @@ class Instructlab(Plugin, IndependentPlugin):
                   desc='user that runs instructlab'),
         PluginOpt('ilab_conf_dir', default='', val_type=str,
                   desc='instructlab data directory'),
+        PluginOpt('get-cache', default='False',
+                  desc='Capture models and osci cached data')
     ]
 
     def setup(self):
         cont_share_conf_path = '/usr/share/instructlab/config/'
-        cont_opt_path = '/opt/app-root/src/.config/instructlab'
+        cont_opt_path = '/opt/app-root/src'
         # .cache dir contains the models and oci directories
         # which can be quite big. We'll gather this only if
         # specifying it via command line option
@@ -38,7 +40,7 @@ class Instructlab(Plugin, IndependentPlugin):
         # In the .local directory we can find datasets,
         # chat logs, taxonomies, and other very useful data
         # We gather this always.
-        cont_local_path = f'{cont_opt_path}/.local/share/instructlab/'
+        cont_local_path = f'{cont_opt_path}/.local/share/instructlab'
 
         in_container = False
         container_names = []
@@ -56,7 +58,7 @@ class Instructlab(Plugin, IndependentPlugin):
             'data',
             'generated',
             'models',
-            'taxonomy',
+            'taxonomy/*',
             'taxonomy_data',
             'chatlogs',
             'checkpoints',
@@ -75,16 +77,21 @@ class Instructlab(Plugin, IndependentPlugin):
             for cont in container_names:
                 self.add_copy_spec(
                     [f'{cont_share_conf_path}rhel_ai_config.yaml',
-                     f'{cont_opt_path}config.yaml'],
+                     f'{cont_config_path}/config.yaml'],
                     container=cont)
                 self.add_copy_spec(
-                    [f"{cont_opt_path}/{data_dir}" for data_dir in data_dirs],
+                    [f"{cont_local_path}/{data_dir}"
+                     for data_dir in data_dirs],
                     container=cont
                     )
                 self.add_cmd_output(
                     [f"ilab {sub}" for sub in subcmds],
                     container=cont
                 )
+                if self.get_option("get-cache"):
+                    self.add_copy_spec(
+                        f'{cont_cache_path}/*'
+                    )
                 self.add_container_logs(cont)
         else:
             if self.get_option("ilab_user"):
