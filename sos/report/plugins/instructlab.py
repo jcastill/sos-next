@@ -23,7 +23,7 @@ class Instructlab(Plugin, IndependentPlugin):
                   desc='user that runs instructlab'),
         PluginOpt('ilab_conf_dir', default='', val_type=str,
                   desc='instructlab data directory'),
-        PluginOpt('get-cache', default='False',
+        PluginOpt('get-cache', default=False,
                   desc='Capture models and osci cached data')
     ]
 
@@ -42,6 +42,11 @@ class Instructlab(Plugin, IndependentPlugin):
         # We gather this always.
         cont_local_path = f'{cont_opt_path}/.local/share/instructlab'
 
+        self.add_forbidden_path([
+            f"{cont_local_path}/taxonomy/.git",
+            f"{cont_local_path}/taxonomy/.github",
+            ])
+
         in_container = False
         container_names = []
         _containers = self.get_containers()
@@ -57,15 +62,13 @@ class Instructlab(Plugin, IndependentPlugin):
         data_dirs = [
             'data',
             'generated',
-            'models',
-            'taxonomy/*',
+            'taxonomy',
             'taxonomy_data',
             'chatlogs',
             'checkpoints',
             'datasets',
             'internal',
             'phased',
-            'taxonomy',
         ]
 
         for _con in _containers:
@@ -90,8 +93,9 @@ class Instructlab(Plugin, IndependentPlugin):
                 )
                 if self.get_option("get-cache"):
                     self.add_copy_spec(
-                        f'{cont_cache_path}/*'
-                    )
+                        f'{cont_cache_path}',
+                        container=cont
+                        )
                 self.add_container_logs(cont)
         else:
             if self.get_option("ilab_user"):
