@@ -16,7 +16,7 @@ class Nvidia(Plugin, IndependentPlugin):
 
     short_desc = 'Nvidia GPU information'
     plugin_name = 'nvidia'
-    commands = ('nvidia-smi',)
+    commands = ('nvidia-smi', 'nvidia-ctk',)
 
     def setup(self):
         subcmds = [
@@ -30,8 +30,17 @@ class Nvidia(Plugin, IndependentPlugin):
             'nvlink -e'
         ]
 
+        ctk_subcmds = [
+            'cdi list',
+            '--version',
+        ]
+
+        self.add_copy_spec("/etc/cdi/nvidia.yaml")
         self.add_service_status("nvidia-persistenced")
+        self.add_service_status("nvidia-fabricmanager")
+        self.add_service_status("nvidia-toolkit-firstboot")
         self.add_cmd_output([f"nvidia-smi {cmd}" for cmd in subcmds])
+        self.add_cmd_output([f"nvidia-ctk {cmd}" for cmd in ctk_subcmds])
 
         query = ('gpu_name,gpu_bus_id,vbios_version,temperature.gpu,'
                  'utilization.gpu,memory.total,memory.free,memory.used,'
