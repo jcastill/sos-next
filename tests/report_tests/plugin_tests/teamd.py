@@ -7,7 +7,7 @@
 # See the LICENSE file in the source distribution for further information.
 
 from avocado.utils import process
-from sos_tests import StageTwoReportTest
+from sos_tests import StageTwoReportTest, os_version
 
 
 class TeamdPluginTest(StageTwoReportTest):
@@ -24,6 +24,7 @@ class TeamdPluginTest(StageTwoReportTest):
 
     sos_cmd = '-o teamd'
     redhat_only = True
+    os_version(8)
 
     def pre_sos_setup(self):
         # restart NetworkManager to account for the new package

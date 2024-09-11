@@ -64,6 +64,16 @@ def ubuntu_only(tst):
     return wrapper
 
 
+def os_version(tst, version):
+    # Specify the max OS version to which a test applies
+    # This helps when running tests on plugins that contain
+    # tools that have been deprecated in latest versions
+    def wrapper(func):
+        if distro.detect().version > version:
+            raise TestSkipError('Not running in the current OS version')
+    return wrapper
+
+
 class BaseSoSTest(Test):
     """Base class for all our test classes to build off of.
 
