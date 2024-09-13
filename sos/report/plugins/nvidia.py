@@ -52,5 +52,8 @@ class Nvidia(Plugin, IndependentPlugin):
             f"nvidia-smi --query-retired-pages={querypages} --format=csv"
         )
         self.add_journal(boot=0, identifier='nvidia-persistenced')
+        self.add_journal(units=["nvidia-fabricmanager",
+                                "nvidia-toolkit-firstboot"])
+
 
 # vim: set et ts=4 sw=4 :
