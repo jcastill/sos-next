@@ -17,6 +17,8 @@ class Nvidia(Plugin, IndependentPlugin):
     short_desc = 'Nvidia GPU information'
     plugin_name = 'nvidia'
     commands = ('nvidia-smi', 'nvidia-ctk',)
+    services = ('nvidia-persistenced', 'nvidia-fabricmanager',
+                'nvidia-toolkit-firstboot')
 
     def setup(self):
         subcmds = [
@@ -36,9 +38,7 @@ class Nvidia(Plugin, IndependentPlugin):
         ]
 
         self.add_copy_spec("/etc/cdi/nvidia.yaml")
-        self.add_service_status("nvidia-persistenced")
-        self.add_service_status("nvidia-fabricmanager")
-        self.add_service_status("nvidia-toolkit-firstboot")
+
         self.add_cmd_output([f"nvidia-smi {cmd}" for cmd in subcmds])
         self.add_cmd_output([f"nvidia-ctk {cmd}" for cmd in ctk_subcmds])
 
@@ -52,8 +52,6 @@ class Nvidia(Plugin, IndependentPlugin):
             f"nvidia-smi --query-retired-pages={querypages} --format=csv"
         )
         self.add_journal(boot=0, identifier='nvidia-persistenced')
-        self.add_journal(units=["nvidia-fabricmanager",
-                                "nvidia-toolkit-firstboot"])
 
 
 # vim: set et ts=4 sw=4 :
