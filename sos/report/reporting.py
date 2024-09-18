@@ -136,12 +136,11 @@ class PlainTextReport:
     ALERT = "  ! %s"
     NOTE = "  * %s"
     PLUGLISTHEADER = "Loaded Plugins:"
-    PLUGLISTITEM = "  {name}"
     PLUGLISTSEP = "\n"
     PLUGLISTMAXITEMS = 5
     PLUGLISTFOOTER = ""
-    PLUGINFORMAT = "{name}"
     PLUGDIVIDER = "=" * 72
+    is_html = False
 
     subsections = (
         (Command, LEAF,      "-  commands executed:", ""),
@@ -168,7 +167,11 @@ class PlainTextReport:
         i = 0
         plugcount = len(self.report_data)
         for section_name, _ in self.report_data:
-            line += f"  {section_name}"
+            if self.is_html:
+                line += (f'<td><a href="#{section_name}">'
+                         f'{section_name}</a></td>\n')
+            else:
+                line += f"  {section_name}"
             i += 1
             if (i % self.PLUGLISTMAXITEMS == 0) and (i < plugcount):
                 line += self.PLUGLISTSEP
@@ -177,7 +180,12 @@ class PlainTextReport:
 
         for section_name, section_contents in self.report_data:
             line_buf.append(self.PLUGDIVIDER)
-            line_buf.append(f"{section_name}")
+            if self.is_html:
+                section_str = (f'<h2 id="{section_name}">Plugin '
+                               f'<em>{section_name}</em></h2>')
+            else:
+                section_str = f"{section_name}"
+            line_buf.append(section_str)
             for type_, format_, header, footer in self.subsections:
                 self.process_subsection(section_contents, type_.ADDS_TO,
                                         header, format_, footer)
@@ -224,12 +232,11 @@ class HTMLReport(PlainTextReport):
     ALERT = "<li>%s</li>"
     NOTE = "<li>%s</li>"
     PLUGLISTHEADER = "<h3>Loaded Plugins:</h3><table><tr>"
-    PLUGLISTITEM = '<td><a href="#{name}">{name}</a></td>\n'
     PLUGLISTSEP = "</tr>\n<tr>"
     PLUGLISTMAXITEMS = 5
     PLUGLISTFOOTER = "</tr></table>"
-    PLUGINFORMAT = '<h2 id="{name}">Plugin <em>{name}</em></h2>'
     PLUGDIVIDER = "<hr/>\n"
+    is_html = True
 
     subsections = (
         (Command, LEAF,      "<p>Commands executed:</p><ul>", "</ul>"),
