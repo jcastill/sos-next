@@ -92,6 +92,7 @@ class BaseSoSTest(Test):
     ubuntu_only = False
     end_of_test_case = False
     arch = []
+    min_version = max_version = ''
 
     @property
     def klass_name(self):
@@ -270,6 +271,18 @@ class BaseSoSTest(Test):
             return True
         raise TestSkipError(f"Unsupported architecture {sys_arch} for test "
                             f"(supports: {self.arch})")
+
+    def check_os_version_for_enablement(self):
+        """
+        Check if the test case is meant only for a specific version, or between
+        specific versions.
+
+        Takes the `min_version` and `max_version` class attrs, two strings
+        that define the range of versions where the test applies.
+        """
+        os_version = distro.detect().version
+        if os_version <= self.min_version or os_version => self.max_version:
+            raise TestSkipError('Not running in the current OS version')
 
     def setUp(self):
         """Setup the tmpdir and any needed mocking for the test, then execute

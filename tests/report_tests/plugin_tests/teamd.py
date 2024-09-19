@@ -24,7 +24,9 @@ class TeamdPluginTest(StageTwoReportTest):
 
     sos_cmd = '-o teamd'
     redhat_only = True
-    
+
+    max_version = 8
+
     @os_version(version="8")
     def pre_sos_setup(self):
         # restart NetworkManager to account for the new package
