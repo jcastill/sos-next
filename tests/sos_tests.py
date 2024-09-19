@@ -64,7 +64,7 @@ def ubuntu_only(tst):
     return wrapper
 
 
-def os_version(tst, version):
+def os_version(version):
     # Specify the max OS version to which a test applies
     # This helps when running tests on plugins that contain
     # tools that have been deprecated in latest versions
