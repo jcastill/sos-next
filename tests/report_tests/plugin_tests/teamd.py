@@ -7,7 +7,7 @@
 # See the LICENSE file in the source distribution for further information.
 
 from avocado.utils import process
-from sos_tests import StageTwoReportTest, os_version
+from sos_tests import StageTwoReportTest
 
 
 class TeamdPluginTest(StageTwoReportTest):
@@ -25,9 +25,8 @@ class TeamdPluginTest(StageTwoReportTest):
     sos_cmd = '-o teamd'
     redhat_only = True
 
-    max_version = 8
+    versions = ['8', '9', '22.04']
 
-    @os_version(version="8")
     def pre_sos_setup(self):
         # restart NetworkManager to account for the new package
         nmout = process.run('systemctl restart NetworkManager', timeout=30)

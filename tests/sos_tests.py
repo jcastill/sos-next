@@ -64,16 +64,6 @@ def ubuntu_only(tst):
     return wrapper
 
 
-def os_version(version):
-    # Specify the max OS version to which a test applies
-    # This helps when running tests on plugins that contain
-    # tools that have been deprecated in latest versions
-    def wrapper(func):
-        if distro.detect().version > version:
-            raise TestSkipError('Not running in the current OS version')
-    return wrapper
-
-
 class BaseSoSTest(Test):
     """Base class for all our test classes to build off of.
 
@@ -92,7 +82,7 @@ class BaseSoSTest(Test):
     ubuntu_only = False
     end_of_test_case = False
     arch = []
-    min_version = max_version = ''
+    versions = []
 
     @property
     def klass_name(self):
@@ -277,12 +267,14 @@ class BaseSoSTest(Test):
         Check if the test case is meant only for a specific version, or between
         specific versions.
 
-        Takes the `min_version` and `max_version` class attrs, two strings
-        that define the range of versions where the test applies.
+        Takes the `versions` class attribute, a list that specifies
+        the versions where the test applies.
         """
         os_version = distro.detect().version
-        if os_version <= self.min_version or os_version => self.max_version:
-            raise TestSkipError('Not running in the current OS version')
+        if not self.versions or os_version in self.versions:
+            return True
+        raise TestSkipError(f"Unsupported OS version {os_version} "
+                            f"(supports: {self.versions})")
 
     def setUp(self):
         """Setup the tmpdir and any needed mocking for the test, then execute
@@ -292,6 +284,7 @@ class BaseSoSTest(Test):
         self.local_distro = distro.detect().name
         self.check_distro_for_enablement()
         self.check_arch_for_enablement()
+        self.check_os_version_for_enablement()
         # check to prevent multiple setUp() runs
         if not os.path.isdir(self.tmpdir):
             # setup our class-shared tmpdir
