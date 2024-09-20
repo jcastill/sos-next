@@ -25,7 +25,8 @@ class TeamdPluginTest(StageTwoReportTest):
     sos_cmd = '-o teamd'
     redhat_only = True
 
-    versions = ['8', '9', '22.04']
+    # teaming has been deprecated from RHEL 9
+    versions = ['8']
 
     def pre_sos_setup(self):
         # restart NetworkManager to account for the new package
