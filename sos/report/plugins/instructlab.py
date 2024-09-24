@@ -97,16 +97,17 @@ class Instructlab(Plugin, IndependentPlugin):
                         container=cont
                         )
                 self.add_container_logs(cont)
-        else:
-            if self.get_option("ilab_user"):
-                ilab_dir = f'/home/{self.get_option("ilab_user")}/'
-                if self.get_option("ilab_conf_dir"):
-                    ilab_dir = f'{ilab_dir}{self.get_option("ilab_conf_dir")}'
-                else:
-                    ilab_dir = f'{ilab_dir}instructlab'
-            self.add_copy_spec(f'{ilab_dir}/config.yaml')
+
+        if self.get_option("ilab_user"):
+            ilab_dir = f'/home/{self.get_option("ilab_user")}'
+            if self.get_option("ilab_conf_dir"):
+                ilab_dir = f'{ilab_dir}{self.get_option("ilab_conf_dir")}'
+            data_dirs_base = f'{ilab_dir}/.local/share/instructlab'
+
+            self.add_copy_spec(f"{ilab_dir}/.config")
+            self.add_copy_spec(f"{ilab_dir}/.local/share/instructlab")
             self.add_copy_spec([
-                f"{ilab_dir}/{data_dir}" for data_dir in data_dirs
+                f"{data_dirs_base}/{data_dir}" for data_dir in data_dirs
             ])
 
 # vim: set et ts=4 sw=4 :
