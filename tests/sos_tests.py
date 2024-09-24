@@ -83,6 +83,7 @@ class BaseSoSTest(Test):
     end_of_test_case = False
     arch = []
     versions = []
+    distro = distro.detect()
 
     @property
     def klass_name(self):
@@ -270,7 +271,7 @@ class BaseSoSTest(Test):
         Takes the `versions` class attribute, a list that specifies
         the versions where the test applies.
         """
-        os_version = distro.detect().version
+        os_version = self.distro.version
         if not self.versions or os_version in self.versions:
             return True
         raise TestSkipError(f"Unsupported OS version {os_version} "
@@ -281,7 +282,7 @@ class BaseSoSTest(Test):
         the defined sos command. Ensure that we only run the sos command once
         for every test case, instead of once for every test_* method defined.
         """
-        self.local_distro = distro.detect().name
+        self.local_distro = self.distro.name
         self.check_distro_for_enablement()
         self.check_arch_for_enablement()
         self.check_os_version_for_enablement()
