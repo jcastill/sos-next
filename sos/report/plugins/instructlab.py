@@ -91,6 +91,8 @@ class Instructlab(Plugin, IndependentPlugin):
                     [f"ilab {sub}" for sub in subcmds],
                     container=cont
                 )
+                self.add_cmd_output(f"ls -laR {cont_cache_path}",
+                                    container=cont)
                 if self.get_option("get-cache"):
                     self.add_copy_spec(
                         f'{cont_cache_path}',
@@ -109,6 +111,8 @@ class Instructlab(Plugin, IndependentPlugin):
             self.add_copy_spec([
                 f"{data_dirs_base}/{data_dir}" for data_dir in data_dirs
             ])
+
+        self.add_cmd_output(f"ls -laR {ilab_dir}/.cache/instructlab")
 
         if self.get_option("get-cache"):
             self.add_copy_spec(
