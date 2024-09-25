@@ -110,4 +110,8 @@ class Instructlab(Plugin, IndependentPlugin):
                 f"{data_dirs_base}/{data_dir}" for data_dir in data_dirs
             ])
 
+        if self.get_option("get-cache"):
+            self.add_copy_spec(
+                f'{ilab_dir}/.cache/instructlab'
+            )
 # vim: set et ts=4 sw=4 :
