@@ -33,14 +33,19 @@ class Instructlab(Plugin, IndependentPlugin):
         # .cache dir contains the models and oci directories
         # which can be quite big. We'll gather this only if
         # specifying it via command line option
-        cont_cache_path = f'{cont_opt_path}/.cache/instructlab'
+        cache_dir = '/.cache/instructlab'
         # .config is where the configuration yaml files can
         # be found. We gather this always.
-        cont_config_path = f'{cont_opt_path}/.config/instructlab'
+        config_dir = '/.config/instructlab'
         # In the .local directory we can find datasets,
         # chat logs, taxonomies, and other very useful data
         # We gather this always.
-        cont_local_path = f'{cont_opt_path}/.local/share/instructlab'
+        local_share_dir = '/.local/share/instructlab'
+
+        # container paths
+        cont_cache_path = f'{cont_opt_path}{cache_dir}'
+        cont_config_path = f'{cont_opt_path}{config_dir}'
+        cont_local_path = f'{cont_opt_path}{local_share_dir}'
 
         self.add_forbidden_path([
             f"{cont_local_path}/taxonomy/.git",
@@ -104,18 +109,17 @@ class Instructlab(Plugin, IndependentPlugin):
             ilab_dir = f'/home/{self.get_option("ilab_user")}'
             if self.get_option("ilab_conf_dir"):
                 ilab_dir = f'{ilab_dir}{self.get_option("ilab_conf_dir")}'
-            data_dirs_base = f'{ilab_dir}/.local/share/instructlab'
+            data_dirs_base = f'{ilab_dir}{local_share_dir}'
 
-            self.add_copy_spec(f"{ilab_dir}/.config")
-            self.add_copy_spec(f"{ilab_dir}/.local/share/instructlab")
+            self.add_copy_spec(f"{ilab_dir}{config_dir}")
             self.add_copy_spec([
                 f"{data_dirs_base}/{data_dir}" for data_dir in data_dirs
             ])
 
-        self.add_cmd_output(f"ls -laR {ilab_dir}/.cache/instructlab")
+        self.add_cmd_output(f"ls -laR {ilab_dir}/{cache_dir}")
 
         if self.get_option("get-cache"):
             self.add_copy_spec(
-                f'{ilab_dir}/.cache/instructlab'
+                f'{ilab_dir}/{cache_dir}'
             )
 # vim: set et ts=4 sw=4 :
