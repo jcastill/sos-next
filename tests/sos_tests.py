@@ -35,6 +35,7 @@ RH_DIST = ['rhel', 'centos', 'fedora', 'centos-stream']
 UBUNTU_DIST = ['Ubuntu', 'debian']
 
 
+
 def skipIf(cond, message=None):
     # pylint: disable=unused-argument
     def decorator(function):
@@ -82,7 +83,7 @@ class BaseSoSTest(Test):
     ubuntu_only = False
     end_of_test_case = False
     arch = []
-    versions = []
+    only_os_versions = []
     distro = distro.detect()
 
     @property
@@ -271,11 +272,11 @@ class BaseSoSTest(Test):
         Takes the `versions` class attribute, a list that specifies
         the versions where the test applies.
         """
-        only_os_version = self.distro.version
-        if not self.versions or only_os_version in self.versions:
+        os_version = self.distro.version
+        if not self.only_os_versions or os_version in self.only_os_versions:
             return True
-        raise TestSkipError(f"Unsupported OS version {only_os_version} "
-                            f"(supports: {self.versions})")
+        raise TestSkipError(f"Unsupported OS version {only_os_versions} "
+                            f"(supports: {self.only_os_versions})")
 
     def setUp(self):
         """Setup the tmpdir and any needed mocking for the test, then execute
