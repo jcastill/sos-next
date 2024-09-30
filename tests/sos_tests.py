@@ -271,10 +271,10 @@ class BaseSoSTest(Test):
         Takes the `versions` class attribute, a list that specifies
         the versions where the test applies.
         """
-        os_version = self.distro.version
-        if not self.versions or os_version in self.versions:
+        only_os_version = self.distro.version
+        if not self.versions or only_os_version in self.versions:
             return True
-        raise TestSkipError(f"Unsupported OS version {os_version} "
+        raise TestSkipError(f"Unsupported OS version {only_os_version} "
                             f"(supports: {self.versions})")
 
     def setUp(self):
