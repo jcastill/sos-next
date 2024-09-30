@@ -52,10 +52,6 @@ class Instructlab(Plugin, IndependentPlugin):
             f"{cont_local_path}/taxonomy/.github",
             ])
 
-        in_container = False
-        container_names = []
-        _containers = self.get_containers()
-
         subcmds = [
             'taxonomy diff',
             'taxonomy diff --taxonomy-base=empty',
@@ -75,6 +71,10 @@ class Instructlab(Plugin, IndependentPlugin):
             'internal',
             'phased',
         ]
+
+        in_container = False
+        container_names = []
+        _containers = self.get_containers()
 
         for _con in _containers:
             if _con[1].startswith('instructlab'):
