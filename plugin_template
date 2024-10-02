@@ -1,0 +1,37 @@
+ Copyright (C) <Year> <Company> <Name> <email>
+
+# This file is part of the sos project: https://github.com/sosreport/sos
+#
+# This copyrighted material is made available to anyone wishing to use,
+# modify, copy, or redistribute it subject to the terms and conditions of
+# version 2 of the GNU General Public License.
+#
+# See the LICENSE file in the source distribution for further information.
+
+# ToDo Import plugin classes. You can import for 
+# specific distributions, like RedHatPlugin for Red Hat 
+# captures, or in general with IndependentPlugin
+from sos.report.plugins import Plugin, IndependentPlugin
+
+class <Plugin Name>(<list of plugin classes where this class will apply>):
+
+    short_desc = '<short description of the plugin>'
+    plugin_name = '<should be the same as Plugin name>'
+    # Plugin enablement conditions:
+    # List of commands that need to be present for sos to run
+    commands = ('<command>',)
+    # 
+
+    def setup(self):
+
+        # This command will collect the status of a service
+        self.add_service_status("<service name>")
+        # This command will run and collect the output of a command
+        # or a list of commands
+        self.add_cmd_output(<single command or list ofcommands>)
+        # This command will collect the journal of a systemd service
+        self.add_journal('<service name>')
+
+
+# Always add the following vim modeline
+# vim: set et ts=4 sw=4 :
