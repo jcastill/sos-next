@@ -20,6 +20,19 @@ class <Plugin Name>(<list of plugin classes where this class will apply>):
     # Plugin enablement conditions:
     # List of commands that need to be present for sos to run
     commands = ('<command>',)
+    # List of profiles that will enable this plugin
+    profiles = ('<profile name>',)
+    # A way to specify a timeout just for this plugin
+    plugin_timeout = <seconds>
+    # List of configuration files that will enable this plugin
+    # if present
+    config_files = [
+        <config file 1>,
+        <config file 2>,
+        <...>,
+    ]
+
+
     # 
 
     def setup(self):
