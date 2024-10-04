@@ -33,8 +33,6 @@ class <Plugin Name>(<list of plugin classes where this class will apply>):
     ]
 
 
-    # 
-
     def setup(self):
 
         # This command will collect the status of a service
