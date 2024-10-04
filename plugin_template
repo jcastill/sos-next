@@ -46,5 +46,15 @@ class <Plugin Name>(<list of plugin classes where this class will apply>):
         self.add_journal('<service name>')
 
 
+
+        # We use this function to perform any post-processing on files
+        # and/or commands, like obfuscation of keys and passwords
+        def postproc(self):
+                # Function to perform regex substitutions in files
+           		self.do_path_regex_sub(
+			"<file or dir where the substitution will happen>",
+			<regular expression>,
+			<substitution string, i.e. '****'>
+		)
 # Always add the following vim modeline
 # vim: set et ts=4 sw=4 :
