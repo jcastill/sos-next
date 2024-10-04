@@ -286,6 +286,14 @@ class RedHatNetworking(Networking, RedHatPlugin):
 
         super().setup()
 
+    def postproc(self):
+
+        self.do_path_regex_sub(
+            "/etc/nmstate",
+            r"(\s+password:).*",
+            r"\1 ******"
+        )
+
 
 class UbuntuNetworking(Networking, UbuntuPlugin, DebianPlugin):
     trace_host = "archive.ubuntu.com"
@@ -317,7 +325,7 @@ class UbuntuNetworking(Networking, UbuntuPlugin, DebianPlugin):
     def postproc(self):
 
         self.do_path_regex_sub(
-            "/etc/(netplan|nmstate)/*",
+            "/etc/netplan",
             r"(\s+password:).*",
             r"\1 ******"
         )
