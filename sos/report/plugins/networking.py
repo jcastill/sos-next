@@ -67,6 +67,7 @@ class Networking(Plugin):
             "/sys/class/net/*/device/numa_node",
             "/sys/class/net/*/flags",
             "/sys/class/net/*/statistics/",
+            "/etc/nmstate/",
         ])
 
         self.add_forbidden_path([
@@ -316,7 +317,7 @@ class UbuntuNetworking(Networking, UbuntuPlugin, DebianPlugin):
     def postproc(self):
 
         self.do_path_regex_sub(
-            "/etc/netplan",
+            "/etc/(netplan|nmstate)/*",
             r"(\s+password:).*",
             r"\1 ******"
         )
