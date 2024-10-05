@@ -26,10 +26,22 @@ class Cgroups(Plugin, DebianPlugin, UbuntuPlugin, CosPlugin):
 
         self.add_copy_spec([
             "/proc/cgroups",
-            "/sys/fs/cgroup"
+            "/sys/fs/cgroup",
+            "/proc/*/cgroup"
         ])
 
+        iterations = 1
+        orders = [
+            "path",
+            "tasks"
+            "cpu",
+            "memory",
+            "io",
+        ]
         self.add_cmd_output("systemd-cgls")
+        self.add_cmd_output(
+            [f"systemd-cgtop --order={order} "
+             f"-b --iterations={iterations}" for order in orders])
         self.add_forbidden_path(
             "/sys/fs/cgroup/memory/**/memory.kmem.slabinfo"
         )
