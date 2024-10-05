@@ -33,7 +33,7 @@ class Cgroups(Plugin, DebianPlugin, UbuntuPlugin, CosPlugin):
         iterations = 1
         orders = [
             "path",
-            "tasks"
+            "tasks",
             "cpu",
             "memory",
             "io",
