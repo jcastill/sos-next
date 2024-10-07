@@ -27,7 +27,7 @@ class Cgroups(Plugin, DebianPlugin, UbuntuPlugin, CosPlugin):
         self.add_copy_spec([
             "/proc/cgroups",
             "/sys/fs/cgroup",
-            "/proc/*/cgroup"
+            "/proc/[0-9]*/cgroup",
         ])
 
         iterations = 1
