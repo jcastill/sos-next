@@ -17,6 +17,7 @@ class Instructlab(Plugin, IndependentPlugin):
     plugin_name = 'instructlab'
     profiles = ('ai',)
     containers = ('instructlab', 'ilab',)
+    commands = ('ilab',)
 
     option_list = [
         PluginOpt('ilab_user', default='root', val_type=str,
