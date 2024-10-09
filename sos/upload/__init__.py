@@ -17,8 +17,8 @@ from textwrap import fill
 from sos.component import SoSComponent
 from sos import _sos as _
 from sos import __version__
-from sos.policies.distros.redhat import RHELPolicy
-from sos.policies.distros.ubuntu import UbuntuPolicy
+#from sos.policies.distros.redhat import RHELPolicy
+#from sos.policies.distros.ubuntu import UbuntuPolicy
 from sos.utilities import (is_executable, TIMEOUT_DEFAULT)
 
 try:
@@ -64,8 +64,6 @@ class SoSUpload(SoSComponent):
     _upload_s3_secret_key = None
     _upload_s3_region = None
     _upload_s3_object_prefix = ''
-    default_container_runtime = 'docker'
-    _preferred_hash_name = None
     upload_url = None
     upload_user = None
     upload_password = None
@@ -848,6 +846,8 @@ this utility.
         self.intro()
         archive = self.opts.upload_file
         try:
+            from sos.policies.distros.redhat import RHELPolicy
+            from sos.policies.distros.ubuntu import UbuntuPolicy
             if os.stat(archive).st_size > 0:
                 if os.path.isfile(archive):
                     try:
@@ -855,10 +855,13 @@ this utility.
                             _(f"Attempting to upload file {archive} "
                                 f"to case {self.opts.case_id}")
                         )
+                        print(f"********* POLICY IS {self.policy}")
                         if isinstance(self.policy, RHELPolicy) or \
                                 isinstance(self.policy, UbuntuPolicy):
+                            print(f"++++++++++++++ using policy if {self.policy}")
                             self.policy.upload_archive(archive)
                         else:
+                            print(f"++++++++++++++ using policy in else {self.policy}")
                             self.upload_archive(archive)
                         self.ui_log.info(
                             _(f"File {archive} uploaded successfully")

@@ -18,12 +18,13 @@ from sos.report.plugins import RedHatPlugin
 from sos.presets.redhat import (RHEL_PRESETS, RHV, RHEL, CB, RHOSP,
                                 RHOCP, RH_CFME, RH_SATELLITE, AAPEDA,
                                 AAPCONTROLLER)
-from sos.policies.distros import LinuxPolicy, ENV_HOST_SYSROOT
+from sos.policies.distros import LinuxPolicy, ENV_HOST_SYSROOT, OS_RELEASE
 from sos.policies.package_managers.rpm import RpmPackageManager
 from sos.policies.package_managers.flatpak import FlatpakPackageManager
 from sos.policies.package_managers import MultiPackageManager
 from sos.utilities import bold, convert_bytes, TIMEOUT_DEFAULT
 from sos import _sos as _
+from sos.upload import SoSUpload
 
 try:
     import requests
@@ -31,12 +32,10 @@ try:
 except ImportError:
     REQUESTS_LOADED = False
 
-OS_RELEASE = "/etc/os-release"
 RHEL_RELEASE_STR = "Red Hat Enterprise Linux"
 
 
 class RedHatPolicy(LinuxPolicy):
-    distro = "Red Hat"
     vendor = "Red Hat"
     vendor_urls = [
         ('Distribution Website', 'https://www.redhat.com/'),
@@ -47,6 +46,7 @@ class RedHatPolicy(LinuxPolicy):
     name_pattern = 'friendly'
     upload_url = None
     upload_user = None
+    upload_archive_name = ''
     default_container_runtime = 'podman'
     sos_pkg_name = 'sos'
     sos_bin_path = '/usr/sbin'
@@ -90,18 +90,6 @@ class RedHatPolicy(LinuxPolicy):
         self.load_presets()
 
     @classmethod
-    def check(cls, remote=''):
-        """This method checks to see if we are running on Red Hat. It must be
-        overriden by concrete subclasses to return True when running on a
-        Fedora, RHEL or other Red Hat distribution or False otherwise.
-
-        If `remote` is provided, it should be the contents of a remote host's
-        os-release, or comparable, file to be used in place of the locally
-        available one.
-        """
-        return False
-
-    @classmethod
     def display_distro_help(cls, section):
         if cls is not RedHatPolicy:
             super(RedHatPolicy, cls).display_distro_help(section)
@@ -122,7 +110,7 @@ class RedHatPolicy(LinuxPolicy):
         for subc, value in subs.items():
             subln = bold(f"policies.{subc}")
             section.add_text(
-                f"{' ':>8}{subln:<35}{value.distro:<30}",
+                f"{' ':>8}{subln:<35}{value.os_release_name:<30}",
                 newline=False
             )
 
@@ -189,7 +177,7 @@ RH_API_HOST = "https://api.access.redhat.com"
 RH_SFTP_HOST = "sftp://sftp.access.redhat.com"
 
 
-class RHELPolicy(RedHatPolicy):
+class RHELPolicy(RedHatPolicy, SoSUpload):
     """
     The RHEL policy is used specifically for Red Hat Enterprise Linux, of
     any release, and not forks or derivative distributions. For example, this
@@ -216,11 +204,13 @@ class RHELPolicy(RedHatPolicy):
     technical support engineer. This information will be printed at the end of
     the upload process for any sos report execution.
     """
-    distro = RHEL_RELEASE_STR
     vendor = "Red Hat"
+    os_release_file = '/etc/redhat-release'
+    os_release_name = RHEL_RELEASE_STR
+    os_release_id = 'rhel'
     msg = _("""\
 This command will collect diagnostic and configuration \
-information from this %(distro)s system and installed \
+information from this %(os_release_name)s system and installed \
 applications.
 
 An archive containing the collected information will be \
@@ -230,6 +220,7 @@ support representative.
     _upload_url = RH_SFTP_HOST
     _upload_method = 'post'
     _device_token = None
+    _upload_directory = '/'
     # Max size for an http single request is 1Gb
     _max_size_request = 1073741824
 
@@ -239,34 +230,6 @@ support representative.
                          probe_runtime=probe_runtime,
                          remote_exec=remote_exec)
         self.register_presets(RHEL_PRESETS)
-
-    @classmethod
-    def check(cls, remote=''):
-        """Test to see if the running host is a RHEL installation.
-
-            Checks for the presence of the "Red Hat Enterprise Linux"
-            release string at the beginning of the NAME field in the
-            `/etc/os-release` file and returns ``True`` if it is
-            found, and ``False`` otherwise.
-
-            :returns: ``True`` if the host is running RHEL or ``False``
-                      otherwise.
-        """
-
-        if remote:
-            return cls.distro in remote
-
-        if not os.path.exists(OS_RELEASE):
-            return False
-
-        with open(OS_RELEASE, "r", encoding='utf-8') as f:
-            for line in f:
-                if line.startswith("NAME"):
-                    (_, value) = line.split("=")
-                    value = value.strip("\"'")
-                    if value.startswith(cls.distro):
-                        return True
-        return False
 
     def prompt_for_upload_user(self):
         if self.commons['cmdlineopts'].upload_user:
@@ -298,7 +261,7 @@ support representative.
             self.ui_log.info("No case id provided, uploading to SFTP")
             return RH_SFTP_HOST
         rh_case_api = "/support/v1/cases/%s/attachments"
-        return RH_API_HOST + rh_case_api % self.case_id
+        return RH_API_HOST + rh_case_api % self.commons['cmdlineopts'].case_id
 
     def _get_upload_https_auth(self):
         str_auth = f"Bearer {self._device_token}"
@@ -339,17 +302,18 @@ support representative.
             return "Red Hat Customer Portal"
         if self.get_upload_url().startswith(RH_SFTP_HOST):
             return "Red Hat Secure FTP"
-        return self._get_obfuscated_upload_url(self.upload_url)
+        return _get_obfuscated_upload_url(self.upload_url)
 
     def _get_sftp_upload_name(self):
         """The RH SFTP server will only automatically connect file uploads to
         cases if the filename _starts_ with the case number
         """
         fname = self.upload_archive_name.split('/')[-1]
+        
         if self.case_id:
             fname = f"{self.case_id}_{fname}"
-        if self.upload_directory:
-            fname = os.path.join(self.upload_directory, fname)
+        if self._upload_directory:
+            fname = os.path.join(self._upload_directory, fname)
         return fname
 
     # pylint: disable=too-many-branches
@@ -448,11 +412,16 @@ support representative.
         from RHCP failures to the public RH dropbox
         """
         try:
+            print(f"----- A borrar: {self.get_upload_url()}")
             if self.get_upload_url().startswith(RH_API_HOST):
                 self.check_file_too_big(archive)
+            print(f"----- Super is {super()}")
+            print(f"------A borrar 2 : {self.get_upload_url()}")
             uploaded = super().upload_archive(archive)
         except Exception as e:
             uploaded = False
+            print("----------- Here")
+            print(f"----------- A borrar 3: {self.upload_url}")
             if not self.upload_url.startswith(RH_API_HOST):
                 raise
             self.ui_log.error(
@@ -502,9 +471,11 @@ support representative.
 
 
 class CentOsPolicy(RHELPolicy):
-    distro = "CentOS"
     vendor = "CentOS"
     vendor_urls = [('Community Website', 'https://www.centos.org/')]
+    os_release_file = '/etc/centos-release'
+    os_release_name = 'CentOS Linux'
+    os_release_id = 'centos'
 
 
 class RedHatCoreOSPolicy(RHELPolicy):
@@ -528,10 +499,10 @@ class RedHatCoreOSPolicy(RHELPolicy):
     impact how sos report collections are performed.
     """
 
-    distro = "Red Hat CoreOS"
+    os_release_name = "Red Hat Enterprise Linux CoreOS"
     msg = _("""\
 This command will collect diagnostic and configuration \
-information from this %(distro)s system.
+information from this %(os_release_name)s system.
 
 An archive containing the collected information will be \
 generated in %(tmpdir)s and may be provided to a %(vendor)s \
@@ -564,7 +535,7 @@ support representative.
         try:
             with open(host_release, 'r', encoding='utf-8') as hfile:
                 for line in hfile.read().splitlines():
-                    coreos |= 'Red Hat Enterprise Linux CoreOS' in line
+                    coreos |= cls.os_release_name in line
         except IOError:
             # host release file not present, will fallback to RHEL policy check
             pass
@@ -608,29 +579,20 @@ class FedoraPolicy(RedHatPolicy):
     for that location via --upload-user and --upload-pass (or the appropriate
     environment variables).
     """
-
-    distro = "Fedora"
     vendor = "the Fedora Project"
     vendor_urls = [
         ('Community Website', 'https://fedoraproject.org/'),
         ('Community Forums', 'https://discussion.fedoraproject.org/')
     ]
+    os_release_file = '/etc/fedora-release'
+    os_release_name = 'Fedora Linux'
+    os_release_id = 'fedora'
 
     def __init__(self, sysroot=None, init=None, probe_runtime=True,
                  remote_exec=None):
         super().__init__(sysroot=sysroot, init=init,
                          probe_runtime=probe_runtime,
                          remote_exec=remote_exec)
-
-    @classmethod
-    def check(cls, remote=''):
-        """This method checks to see if we are running on Fedora. It returns
-        True or False."""
-
-        if remote:
-            return cls.distro in remote
-
-        return os.path.isfile('/etc/fedora-release')
 
     def fedora_version(self):
         pkg = self.pkg_by_name("fedora-release") or \
