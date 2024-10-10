@@ -20,7 +20,7 @@ class Instructlab(Plugin, IndependentPlugin):
     commands = ('ilab',)
 
     option_list = [
-        PluginOpt('ilab_user', default=None, val_type=str,
+        PluginOpt('ilab_user', default='', val_type=str,
                   desc='user that runs instructlab'),
         PluginOpt('ilab_conf_dir', default='', val_type=str,
                   desc='instructlab data directory'),
@@ -108,8 +108,10 @@ class Instructlab(Plugin, IndependentPlugin):
                         )
                 self.add_container_logs(cont)
 
-        if self.get_option("ilab_user"):
-            ilab_dir = f'/home/{self.get_option("ilab_user")}'
+        ilab_user = self.get_option("ilab_user") if \
+            self.get_option("ilab_user") else ''
+        if ilab_user:
+            ilab_dir = f'/home/{ilab_user}'
             if self.get_option("ilab_conf_dir"):
                 ilab_dir = f'{ilab_dir}{self.get_option("ilab_conf_dir")}'
             data_dirs_base = f'{ilab_dir}{local_share_dir}'
@@ -120,7 +122,7 @@ class Instructlab(Plugin, IndependentPlugin):
             ])
             self.add_cmd_output(
                 [f"ilab {sub}" for sub in subcmds],
-                runas=self.get_option("ilab_user")
+                runas=ilab_user
             )
             self.add_cmd_output(f"ls -laR {ilab_dir}/{cache_dir}")
 
