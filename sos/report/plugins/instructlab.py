@@ -107,7 +107,6 @@ class Instructlab(Plugin, IndependentPlugin):
                 self.add_container_logs(cont)
 
         if self.get_option("ilab_user"):
-            prefix = f'su - {self.get_option("ilab_user")} -c'
             ilab_dir = f'/home/{self.get_option("ilab_user")}'
             if self.get_option("ilab_conf_dir"):
                 ilab_dir = f'{ilab_dir}{self.get_option("ilab_conf_dir")}'
@@ -118,7 +117,8 @@ class Instructlab(Plugin, IndependentPlugin):
                 f"{data_dirs_base}/{data_dir}" for data_dir in data_dirs
             ])
             self.add_cmd_output(
-                [f"{prefix} ilab {sub}" for sub in subcmds]
+                [f"ilab {sub}" for sub in subcmds],
+                runas=self.get_option("ilab_user")
             )
             self.add_cmd_output(f"ls -laR {ilab_dir}/{cache_dir}")
 
