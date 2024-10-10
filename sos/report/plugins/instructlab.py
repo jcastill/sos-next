@@ -20,7 +20,7 @@ class Instructlab(Plugin, IndependentPlugin):
     commands = ('ilab',)
 
     option_list = [
-        PluginOpt('ilab_user', default='root', val_type=str,
+        PluginOpt('ilab_user', default=None, val_type=str,
                   desc='user that runs instructlab'),
         PluginOpt('ilab_conf_dir', default='', val_type=str,
                   desc='instructlab data directory'),
@@ -107,6 +107,7 @@ class Instructlab(Plugin, IndependentPlugin):
                 self.add_container_logs(cont)
 
         if self.get_option("ilab_user"):
+            prefix = f'su - {self.get_option("ilab_user")} -c'
             ilab_dir = f'/home/{self.get_option("ilab_user")}'
             if self.get_option("ilab_conf_dir"):
                 ilab_dir = f'{ilab_dir}{self.get_option("ilab_conf_dir")}'
@@ -117,12 +118,13 @@ class Instructlab(Plugin, IndependentPlugin):
                 f"{data_dirs_base}/{data_dir}" for data_dir in data_dirs
             ])
             self.add_cmd_output(
-                [f"ilab {sub}" for sub in subcmds]
+                [f"{prefix} ilab {sub}" for sub in subcmds]
             )
-        self.add_cmd_output(f"ls -laR {ilab_dir}/{cache_dir}")
+            self.add_cmd_output(f"ls -laR {ilab_dir}/{cache_dir}")
 
-        if self.get_option("get-cache"):
-            self.add_copy_spec(
-                f'{ilab_dir}/{cache_dir}'
-            )
+            if self.get_option("get-cache"):
+                self.add_copy_spec(
+                    f'{ilab_dir}/{cache_dir}'
+                )
+
 # vim: set et ts=4 sw=4 :
