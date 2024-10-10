@@ -51,6 +51,8 @@ class Instructlab(Plugin, IndependentPlugin):
         self.add_forbidden_path([
             f"{cont_local_path}/taxonomy/.git",
             f"{cont_local_path}/taxonomy/.github",
+            f"{cont_opt_path}/src/.local/share/instructlab/taxonomy/.git",
+            f"{cont_opt_path}/src/.local/share/instructlab/taxonomy/.github",
             ])
 
         subcmds = [
