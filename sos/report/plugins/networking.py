@@ -290,7 +290,7 @@ class RedHatNetworking(Networking, RedHatPlugin):
 
         self.do_path_regex_sub(
             "/etc/nmstate",
-            r"(\s+(key|password):).*",
+            r"(\s+(mka-cak|private-key-password|psk|password):).*",
             r"\1 ******"
         )
 
