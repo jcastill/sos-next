@@ -8,19 +8,48 @@
 #
 # See the LICENSE file in the source distribution for further information.
 
-from sos.report.plugins import Plugin, UbuntuPlugin
+import pwd
+import json
+from sos.report.plugins import Plugin, UbuntuPlugin, PluginOpt
 
 
 class Juju(Plugin, UbuntuPlugin):
 
-    short_desc = 'Juju orchestration tool'
+    short_desc = "Juju orchestration tool"
 
-    plugin_name = 'juju'
-    profiles = ('virt', 'sysmgmt')
+    plugin_name = "juju"
+    profiles = ("virt", "sysmgmt")
 
     # Using files instead of packages here because there is no identifying
     # package on a juju machine.
-    files = ('/var/log/juju',)
+    files = ("/var/log/juju",)
+
+    option_list = [
+        PluginOpt(
+            "is-feature",
+            default=False,
+            val_type=bool,
+            desc="Apply PR feature functionality",
+        ),
+        PluginOpt(
+            "juju-user",
+            default="ubuntu",
+            val_type=str,
+            desc="Juju client user",
+        ),
+        PluginOpt(
+            "controllers",
+            default="",
+            val_type=str,
+            desc="collect for specified Juju controllers",
+        ),
+        PluginOpt(
+            "models",
+            default="",
+            val_type=str,
+            desc="collect for specified Juju models",
+        ),
+    ]
 
     def setup(self):
         # Juju service names are not consistent through deployments,
@@ -33,25 +62,96 @@ class Juju(Plugin, UbuntuPlugin):
         self.add_copy_spec("/var/lib/juju/agents/*/agent.conf")
 
         # Get a directory listing of /var/log/juju and /var/lib/juju
-        self.add_dir_listing([
-            '/var/log/juju*',
-            '/var/lib/juju*'
-        ], recursive=True)
+        self.add_dir_listing(
+            ["/var/log/juju*", "/var/lib/juju*"], recursive=True
+        )
 
         if self.get_option("all_logs"):
             # /var/lib/juju used to be in the default capture moving here
             # because it usually was way to big.  However, in most cases you
             # want all logs you want this too.
-            self.add_copy_spec([
-                "/var/log/juju",
-                "/var/lib/juju",
-                "/var/lib/juju/**/.*",
-            ])
+            self.add_copy_spec(
+                [
+                    "/var/log/juju",
+                    "/var/lib/juju",
+                    "/var/lib/juju/**/.*",
+                ]
+            )
             self.add_forbidden_path("/var/lib/juju/kvm")
         else:
             # We need this because we want to collect to the limit of all
             # logs in the directory.
             self.add_copy_spec("/var/log/juju/*.log")
+
+        # Only run the feature code if this plugin option is set
+        if not self.get_option("is-feature"):
+            return
+
+        juju_user = self.get_option("juju-user")
+        try:
+            pwd.getpwnam(juju_user)
+        except KeyError:
+            self._log_warn(
+                f'User "{juju_user}" does not exist, will not collect Juju \
+                    information.'
+            )
+            return
+
+        if self.get_option("controllers") and self.get_option("models"):
+            self._log_warn(
+                "Options: controllers, models are mutually exclusive. Will \
+                    not collect Juju information."
+            )
+            return
+
+        controllers_json = self.collect_cmd_output(
+            "juju controllers --format=json", runas=juju_user
+        )
+        if controllers_json["status"] == 0:
+            desired_controllers = set(
+                self.get_option("controllers").split(" ")
+            )
+            # If a controller option is supplied, use it. Otherwise, get all
+            #  controllers
+            if desired_controllers and desired_controllers != {""}:
+                controllers = desired_controllers
+            else:
+                controllers = set(
+                    json.loads(controllers_json["output"])[
+                        "controllers"
+                    ].keys()
+                )
+        else:
+            controllers = {}
+
+        # Specific models
+        if self.get_option("models"):
+            models = self.get_option("models").split(" ")
+            commands = [
+                f"juju status -m {model} --format=json" for model in models
+            ]
+            for command in commands:
+                self.collect_cmd_output(command, runas=juju_user)
+
+        # All controllers and all models OR specific controllers and all
+        #  models for each
+        else:
+            for controller in controllers:
+                models_json = self.exec_cmd(
+                    f"juju models --all -c {controller} --format=json",
+                    runas=juju_user,
+                )
+                if models_json["status"] == 0:
+                    models = [
+                        model["short-name"]
+                        for model in json.loads(models_json["output"])["models"]
+                    ]
+                    commands = [
+                        f"juju status -m {controller}:{model} --format=json"
+                        for model in models
+                    ]
+                    for command in commands:
+                        self.collect_cmd_output(command, runas=juju_user)
 
     def postproc(self):
         agents_path = "/var/lib/juju/agents/*"
@@ -63,10 +163,11 @@ class Juju(Plugin, UbuntuPlugin):
         ]
 
         # Redact simple yaml style "key: value".
-        keys_regex = fr"(^\s*({'|'.join(protect_keys)})\s*:\s*)(.*)"
+        keys_regex = rf"(^\s*({'|'.join(protect_keys)})\s*:\s*)(.*)"
         sub_regex = r"\1*********"
         self.do_path_regex_sub(agents_path, keys_regex, sub_regex)
         # Redact certificates
         self.do_file_private_sub(agents_path)
+
 
 # vim: set et ts=4 sw=4 :

@@ -8,7 +8,7 @@
 #
 # See the LICENSE file in the source distribution for further information.
 
-from sos.report.plugins import (Plugin, IndependentPlugin, PluginOpt)
+from sos.report.plugins import Plugin, IndependentPlugin, PluginOpt
 
 
 class Instructlab(Plugin, IndependentPlugin):
@@ -29,7 +29,7 @@ class Instructlab(Plugin, IndependentPlugin):
     ]
 
     def setup(self):
-        cont_share_conf_path = '/usr/share/instructlab/config/'
+        cont_share_conf_path = '/usr/share/instructlab/config'
         cont_opt_path = '/opt/app-root/src'
         # .cache dir contains the models and oci directories
         # which can be quite big. We'll gather this only if
@@ -60,7 +60,7 @@ class Instructlab(Plugin, IndependentPlugin):
             'taxonomy diff --taxonomy-base=empty',
             'system info',
             'model list',
-            'config show'
+            'config show',
         ]
 
         data_dirs = [
@@ -87,25 +87,23 @@ class Instructlab(Plugin, IndependentPlugin):
         if in_container:
             for cont in container_names:
                 self.add_copy_spec(
-                    [f'{cont_share_conf_path}rhel_ai_config.yaml',
+                    [f'{cont_share_conf_path}/rhel_ai_config.yaml',
                      f'{cont_config_path}/config.yaml'],
                     container=cont)
                 self.add_copy_spec(
                     [f"{cont_local_path}/{data_dir}"
                      for data_dir in data_dirs],
-                    container=cont
-                    )
+                    container=cont)
                 self.add_cmd_output(
                     [f"ilab {sub}" for sub in subcmds],
-                    container=cont
-                )
-                self.add_cmd_output(f"ls -laR {cont_cache_path}",
-                                    container=cont)
+                    container=cont)
+                self.add_dir_listing(cont_cache_path,
+                                     recursive=True,
+                                     container=cont)
                 if self.get_option("get-cache"):
                     self.add_copy_spec(
                         f'{cont_cache_path}',
-                        container=cont
-                        )
+                        container=cont)
                 self.add_container_logs(cont)
 
         ilab_user = self.get_option("ilab_user") if \
@@ -120,15 +118,11 @@ class Instructlab(Plugin, IndependentPlugin):
             self.add_copy_spec([
                 f"{data_dirs_base}/{data_dir}" for data_dir in data_dirs
             ])
-            self.add_cmd_output(
-                [f"ilab {sub}" for sub in subcmds],
-                runas=ilab_user
-            )
-            self.add_cmd_output(f"ls -laR {ilab_dir}/{cache_dir}")
+            self.add_dir_listing(f"{ilab_dir}/{cache_dir}",
+                                 recursive=True)
 
             if self.get_option("get-cache"):
                 self.add_copy_spec(
-                    f'{ilab_dir}/{cache_dir}'
-                )
+                    f'{ilab_dir}/{cache_dir}')
 
 # vim: set et ts=4 sw=4 :
