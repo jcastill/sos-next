@@ -12,6 +12,12 @@ from sos.report.plugins import Plugin, IndependentPlugin, PluginOpt
 
 
 class Instructlab(Plugin, IndependentPlugin):
+    """
+    This plugin is used to capture information about
+    Instructlab installations.
+    Instructlab can run either as a container, or directly
+    outside a container.
+    """
 
     short_desc = 'Instructlab'
     plugin_name = 'instructlab'
