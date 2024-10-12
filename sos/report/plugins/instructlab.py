@@ -29,24 +29,24 @@ class Instructlab(Plugin, IndependentPlugin):
     ]
 
     def setup(self):
-        cont_share_conf_path = '/usr/share/instructlab/config'
-        cont_opt_path = '/opt/app-root/src'
+        cont_share_conf_path = "/usr/share/instructlab/config"
+        cont_opt_path = "/opt/app-root/src"
         # .cache dir contains the models and oci directories
         # which can be quite big. We'll gather this only if
         # specifying it via command line option
-        cache_dir = '/.cache/instructlab'
+        cache_dir = "/.cache/instructlab"
         # .config is where the configuration yaml files can
         # be found. We gather this always.
-        config_dir = '/.config/instructlab'
+        config_dir = "/.config/instructlab"
         # In the .local directory we can find datasets,
         # chat logs, taxonomies, and other very useful data
         # We gather this always.
-        local_share_dir = '/.local/share/instructlab'
+        local_share_dir = "/.local/share/instructlab"
 
         # container paths
-        cont_cache_path = f'{cont_opt_path}{cache_dir}'
-        cont_config_path = f'{cont_opt_path}{config_dir}'
-        cont_local_path = f'{cont_opt_path}{local_share_dir}'
+        cont_cache_path = f"{cont_opt_path}{cache_dir}"
+        cont_config_path = f"{cont_opt_path}{config_dir}"
+        cont_local_path = f"{cont_opt_path}{local_share_dir}"
 
         self.add_forbidden_path([
             f"{cont_local_path}/taxonomy/.git",
@@ -75,44 +75,38 @@ class Instructlab(Plugin, IndependentPlugin):
             'phased',
         ]
 
-        in_container = False
-        container_names = []
-        _containers = self.get_containers()
+        ilab_con = None
+        for con in self.containers:
+            if self.get_container_by_name(con):
+                ilab_con = con
+                break
 
-        for _con in _containers:
-            if _con[1].startswith('instructlab'):
-                in_container = True
-                container_names.append(_con[1])
+        self.add_copy_spec(
+            [f"{cont_share_conf_path}/rhel_ai_config.yaml",
+             f"{cont_config_path}/config.yaml"],
+            container=ilab_con)
+        self.add_copy_spec(
+            [f"{cont_local_path}/{data_dir}"
+             for data_dir in data_dirs],
+            container=ilab_con)
+        self.add_cmd_output(
+            [f"ilab {sub}" for sub in subcmds],
+            container=ilab_con)
+        self.add_dir_listing(cont_cache_path,
+                             recursive=True,
+                             container=ilab_con)
+        if self.get_option('get-cache'):
+            self.add_copy_spec(
+                f"{cont_cache_path}",
+                container=ilab_con)
+        self.add_container_logs(list(self.containers))
 
-        if in_container:
-            for cont in container_names:
-                self.add_copy_spec(
-                    [f'{cont_share_conf_path}/rhel_ai_config.yaml',
-                     f'{cont_config_path}/config.yaml'],
-                    container=cont)
-                self.add_copy_spec(
-                    [f"{cont_local_path}/{data_dir}"
-                     for data_dir in data_dirs],
-                    container=cont)
-                self.add_cmd_output(
-                    [f"ilab {sub}" for sub in subcmds],
-                    container=cont)
-                self.add_dir_listing(cont_cache_path,
-                                     recursive=True,
-                                     container=cont)
-                if self.get_option("get-cache"):
-                    self.add_copy_spec(
-                        f'{cont_cache_path}',
-                        container=cont)
-                self.add_container_logs(cont)
-
-        ilab_user = self.get_option("ilab_user") if \
-            self.get_option("ilab_user") else ''
+        ilab_user = self.get_option("ilab_user")
         if ilab_user:
-            ilab_dir = f'/home/{ilab_user}'
+            ilab_dir = f"/home/{ilab_user}"
             if self.get_option("ilab_conf_dir"):
-                ilab_dir = f'{ilab_dir}{self.get_option("ilab_conf_dir")}'
-            data_dirs_base = f'{ilab_dir}{local_share_dir}'
+                ilab_dir = f"{ilab_dir}{self.get_option('ilab_conf_dir')}"
+            data_dirs_base = f"{ilab_dir}{local_share_dir}"
 
             self.add_copy_spec(f"{ilab_dir}{config_dir}")
             self.add_copy_spec([
