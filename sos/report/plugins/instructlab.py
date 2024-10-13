@@ -15,6 +15,9 @@ class Instructlab(Plugin, IndependentPlugin):
     """
     This plugin is used to capture information about
     Instructlab installations.
+    InstructLab is an open source project for enhancing
+    large language models (LLMs) used in generative a
+    rtificial intelligence (gen AI) applications.
     Instructlab can run either as a container, or directly
     outside a container.
     """
