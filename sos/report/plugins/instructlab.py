@@ -8,6 +8,7 @@
 #
 # See the LICENSE file in the source distribution for further information.
 
+import os.path
 from sos.report.plugins import Plugin, IndependentPlugin, PluginOpt
 
 
@@ -16,8 +17,8 @@ class Instructlab(Plugin, IndependentPlugin):
     This plugin is used to capture information about
     Instructlab installations.
     InstructLab is an open source project for enhancing
-    large language models (LLMs) used in generative a
-    rtificial intelligence (gen AI) applications.
+    large language models (LLMs) used in generative
+    artificial intelligence (gen AI) applications.
     Instructlab can run either as a container, or directly
     outside a container.
     """
@@ -53,9 +54,9 @@ class Instructlab(Plugin, IndependentPlugin):
         local_share_dir = "/.local/share/instructlab"
 
         # container paths
-        cont_cache_path = f"{cont_opt_path}{cache_dir}"
-        cont_config_path = f"{cont_opt_path}{config_dir}"
-        cont_local_path = f"{cont_opt_path}{local_share_dir}"
+        cont_cache_path = os.path.join(cont_opt_path, cache_dir)
+        cont_config_path = os.path.join(cont_opt_path, config_dir)
+        cont_local_path = os.path.join(cont_opt_path, local_share_dir)
 
         self.add_forbidden_path([
             f"{cont_local_path}/taxonomy/.git",
@@ -112,10 +113,12 @@ class Instructlab(Plugin, IndependentPlugin):
 
         ilab_user = self.get_option("ilab_user")
         if ilab_user:
-            ilab_dir = f"/home/{ilab_user}"
+            ilab_dir = os.path.join("~/", ilab_user)
             if self.get_option("ilab_conf_dir"):
-                ilab_dir = f"{ilab_dir}{self.get_option('ilab_conf_dir')}"
-            data_dirs_base = f"{ilab_dir}{local_share_dir}"
+                ilab_dir = os.path.join(
+                    ilab_dir, self.get_option('ilab_conf_dir')
+                )
+            data_dirs_base = os.path.join(ilab_dir, local_share_dir)
 
             self.add_copy_spec(f"{ilab_dir}{config_dir}")
             self.add_copy_spec([
