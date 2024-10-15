@@ -94,6 +94,10 @@ class Ssh(Plugin, IndependentPlugin):
         for user in users_data:
             if user.pw_dir in fs_mount_info and \
                     fs_mount_info[user.pw_dir] in non_local_fs:
+                self._log_warn(
+                        f"Skipping capture in {user.pw_dir}"
+                        " because it's a remote directory"
+                )
                 continue
             home_dir = self.path_join(user.pw_dir, '.ssh')
             self.add_dir_listing(home_dir)
