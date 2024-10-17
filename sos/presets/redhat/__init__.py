@@ -18,6 +18,8 @@ _opts_verify = SoSOptions(verify=True)
 _cb_profiles = ['boot', 'storage', 'system']
 _cb_plugopts = ['boot.all-images=on', 'rpm.rpmva=on', 'rpm.rpmdb=on']
 
+_rhelai_profiles = ['hardware', 'ai', 'containers']
+
 
 RHV = "rhv"
 RHV_DESC = "Red Hat Virtualization"
@@ -86,6 +88,15 @@ NOTE_SIZE = "This preset may increase report size"
 NOTE_TIME = "This preset may increase report run time"
 NOTE_SIZE_TIME = "This preset may increase report size and run time"
 
+RHELAI = "RHEL AI"
+RHELAI_DESC = "Red Hat Enterprise Linux AI"
+RHELAI_OPTS = SoSOptions(
+    verify=True, all_logs=True, profiles=_rhelai_profiles
+)
+RHELAI_NOTE = ("Collects RHEL AI related data, like Instructlab containers,"
+               "nvidia and bootc plugins, and user-specific training data.")
+
+
 RHEL_PRESETS = {
     AAPEDA: PresetDefaults(name=AAPEDA, desc=AAPEDA_DESC, opts=AAPEDA_OPTS,
                            note=AAPEDA_NOTE),
@@ -102,7 +113,9 @@ RHEL_PRESETS = {
                             opts=_opts_verify),
     RH_SATELLITE: PresetDefaults(name=RH_SATELLITE, desc=RH_SATELLITE_DESC,
                                  note=NOTE_TIME, opts=SAT_OPTS),
-    CB: PresetDefaults(name=CB, desc=CB_DESC, note=CB_NOTE, opts=CB_OPTS)
+    CB: PresetDefaults(name=CB, desc=CB_DESC, note=CB_NOTE, opts=CB_OPTS),
+    RHELAI: PresetDefaults(name=RHELAI, desc=RHELAI_DESC, opts=RHELAI_OPTS,
+                           note=RHELAI_NOTE),
 }
 
 
