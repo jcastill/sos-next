@@ -600,4 +600,91 @@ class FedoraPolicy(RedHatPolicy):
                 "fedora-release-.*")[-1]
         return int(pkg["version"])
 
+class RedHatAIPolicy(RHELPolicy):
+    """
+    Red Hat AI is a containerized host built upon Red Hat Enterprise Linux
+    and as such this policy is built on top of the RHEL policy. For users, this
+    should be entirely transparent as any behavior exhibited or influenced on
+    RHEL systems by that policy will be seen on RHCOS systems as well.
+
+    The one change is that this policy ensures that sos collect will deploy a
+    container on RHCOS systems in order to facilitate sos report collection,
+    as RHCOS discourages non-default package installation via rpm-ostree which
+    is used to maintain atomicity for RHCOS nodes. The default container image
+    used by this policy is the support-tools image maintained by Red Hat on
+    registry.redhat.io.
+
+    Note that this policy is only loaded when sos is directly run on an RHCOS
+    node - if sos collect uses the `oc` transport (the default transport that
+    will be attempted by the ocp cluster profile), then the policy loaded
+    inside the launched pod will be RHEL. Again, this is expected and will not
+    impact how sos report collections are performed.
+    """
+
+    os_release_name = "Red Hat Enterprise Linux AI"
+    msg = _("""\
+This command will collect diagnostic and configuration \
+information from this %(os_release_name)s system.
+
+An archive containing the collected information will be \
+generated in %(tmpdir)s and may be provided to a %(vendor)s \
+support representative.
+""" + disclaimer_text + "%(vendor_text)s\n")
+
+    containerized = True
+    container_runtime = 'podman'
+    container_image = 'registry.redhat.io/rhel9/support-tools'
+    sos_path_strip = '/host'
+    container_version_command = 'rpm -q sos'
+    container_authfile = '/var/lib/kubelet/config.json'
+
+    def __init__(self, sysroot=None, init=None, probe_runtime=True,
+                 remote_exec=None):
+        super().__init__(sysroot=sysroot, init=init,
+                         probe_runtime=probe_runtime,
+                         remote_exec=remote_exec)
+
+    @classmethod
+    def check(cls, remote=''):
+
+        if remote:
+            return 'RHELAI' in remote
+
+        rhelai = False
+        if ENV_HOST_SYSROOT not in os.environ:
+            return coreos
+        host_release = os.environ[ENV_HOST_SYSROOT] + OS_RELEASE
+        try:
+            with open(host_release, 'r', encoding='utf-8') as hfile:
+                for line in hfile.read().splitlines():
+                    coreos |= cls.os_release_name in line
+        except IOError:
+            # host release file not present, will fallback to RHEL policy check
+            pass
+        return coreos
+
+    def probe_preset(self):
+        # As of the creation of this policy, RHCOS is only available for
+        # RH OCP environments.
+        return self.find_preset(RHOCP)
+
+    def create_sos_container(self, image=None, auth=None, force_pull=False):
+        _image = image or self.container_image
+        _pull = '--pull=always' if force_pull else ''
+        return (
+            f"{self.container_runtime} run -di "
+            f"--name {self.sos_container_name} --privileged --ipc=host "
+            f"--net=host --pid=host -e HOST=/host "
+            f"-e NAME={self.sos_container_name} -e "
+            f"IMAGE={_image} {_pull} "
+            f"-v /run:/run -v /var/log:/var/log "
+            f"-v /etc/machine-id:/etc/machine-id "
+            f"-v /etc/localtime:/etc/localtime "
+            f"-v /:/host "
+            f"{auth or ''} {_image}"
+        )
+
+    def set_cleanup_cmd(self):
+        return f'podman rm --force {self.sos_container_name}'
+
 # vim: set et ts=4 sw=4 :
