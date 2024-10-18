@@ -600,6 +600,7 @@ class FedoraPolicy(RedHatPolicy):
                 "fedora-release-.*")[-1]
         return int(pkg["version"])
 
+
 class RedHatAIPolicy(RHELPolicy):
     """
     Red Hat AI is a containerized host built upon Red Hat Enterprise Linux
@@ -652,21 +653,19 @@ support representative.
 
         rhelai = False
         if ENV_HOST_SYSROOT not in os.environ:
-            return coreos
+            return rhelai
         host_release = os.environ[ENV_HOST_SYSROOT] + OS_RELEASE
         try:
             with open(host_release, 'r', encoding='utf-8') as hfile:
                 for line in hfile.read().splitlines():
-                    coreos |= cls.os_release_name in line
+                    rhelai |= cls.os_release_name in line
         except IOError:
             # host release file not present, will fallback to RHEL policy check
             pass
         return coreos
 
     def probe_preset(self):
-        # As of the creation of this policy, RHCOS is only available for
-        # RH OCP environments.
-        return self.find_preset(RHOCP)
+        return self.find_preset(RHELAI)
 
     def create_sos_container(self, image=None, auth=None, force_pull=False):
         _image = image or self.container_image

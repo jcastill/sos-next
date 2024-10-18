@@ -84,6 +84,11 @@ class Policy():
                          file.
     :vartype os_release_id: ``str``
 
+    :cvar os_release_variant: The variant of the distribution as it appears in
+                            the os-release (-esque) file for the VARIANT
+                            variable.
+    :vartype os_release_variant: ``str``
+    
     :cvar os_release_file: The filepath of the distribution's os-release file
     :vartype os_release_file: ``str``
 
